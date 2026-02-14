@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
+	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type helloResponse struct {
@@ -34,6 +36,18 @@ func main() {
 		}
 
 		name := r.URL.Query().Get("name")
+		if strings.TrimSpace(name) != "" {
+			if err := validator.ValidateName(name); err != nil {
+				var ve *validator.ValidationError
+				if errors.As(err, &ve) {
+					http.Error(w, ve.Error(), http.StatusBadRequest)
+					return
+				}
+				http.Error(w, "invalid input", http.StatusBadRequest)
+				return
+			}
+		}
+
 		count := counters.Inc("hello_requests")
 		message := greeter.BuildGreeting(name, int(count))
 

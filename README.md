@@ -6,6 +6,16 @@ This repo demonstrates two common Go use-cases with shared code:
 
 Both programs share `internal/greeter` and `internal/metrics`, and both use concurrency in a beginner-friendly way.
 
+## Repository Docs
+
+Use the files in `docs/` as the source of truth for roadmap and implementation instructions:
+- `docs/ROADMAP.md` (overall learning plan and phase order)
+- `docs/PHASE-01-errors.md`
+- `docs/PHASE-02-interfaces.md`
+- `docs/PHASE-03-testing.md`
+- `docs/PHASE-04-fileio.md`
+- `docs/PHASE-05-generics.md`
+
 ## Project Structure
 
 ```text
@@ -13,13 +23,23 @@ Both programs share `internal/greeter` and `internal/metrics`, and both use conc
 ├── cmd/
 │   ├── hello-cli/main.go
 │   └── hello-server/main.go
+├── docs/
+│   ├── ROADMAP.md
+│   ├── PHASE-01-errors.md
+│   ├── PHASE-02-interfaces.md
+│   ├── PHASE-03-testing.md
+│   ├── PHASE-04-fileio.md
+│   └── PHASE-05-generics.md
 ├── internal/
 │   ├── greeter/
 │   │   ├── greeter.go
 │   │   └── greeter_test.go
-│   └── metrics/
-│       ├── counters.go
-│       └── counters_test.go
+│   ├── metrics/
+│   │   ├── counters.go
+│   │   └── counters_test.go
+│   └── validator/
+│       ├── validator.go
+│       └── validator_test.go
 ├── .gitignore
 ├── go.mod
 ├── Makefile
@@ -106,6 +126,7 @@ curl "http://localhost:8080/hello?name=Nick"
 
 - `internal/greeter`: builds greeting strings
 - `internal/metrics`: thread-safe in-memory counters used by both CLI and server
+- `internal/validator`: demonstrates Go error handling patterns with sentinel errors, wrapping, and `errors.Is` / `errors.As`
 
 ## Makefile Commands
 

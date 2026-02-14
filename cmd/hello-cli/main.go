@@ -8,6 +8,7 @@ import (
 
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
+	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type workerResult struct {
@@ -26,8 +27,11 @@ func main() {
 	jsonOutput := flag.Bool("json", false, "emit JSON lines output")
 	flag.Parse()
 
-	if *repeat < 1 {
-		log.Fatal("--repeat must be >= 1")
+	if err := validator.ValidateName(*name); err != nil {
+		log.Fatalf("invalid input: %v", err)
+	}
+	if err := validator.ValidateRepeat(*repeat); err != nil {
+		log.Fatalf("invalid input: %v", err)
 	}
 
 	counters := metrics.NewCounters()
