@@ -9,3 +9,6 @@ bin/
 *.out
 
 .DS_Store
+
+# Windows Mark-of-the-Web artifacts
+*:Zone.Identifier
