@@ -15,3 +15,7 @@ bin/
 
 # Windows Mark-of-the-Web artifacts
 *:Zone.Identifier
+
+# build outputs
+hello-cli
+hello-server
