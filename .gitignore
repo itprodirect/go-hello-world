@@ -12,3 +12,6 @@ bin/
 
 # Windows Mark-of-the-Web artifacts
 *:Zone.Identifier
+
+# Windows Mark-of-the-Web artifacts
+*:Zone.Identifier
