@@ -1,161 +1,83 @@
-# Go Beginner Demo: CLI vs HTTP Server
+﻿# Go Toolkit: Reusable Blocks to Real Tools
 
-This repo demonstrates two common Go use-cases with shared code:
-- A short-lived CLI command (`hello-cli`)
-- A long-running HTTP service (`hello-server`)
+Production-focused Go toolkit factory.
+Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 
-Both programs share `internal/greeter` and `internal/metrics`, and both use concurrency in a beginner-friendly way.
+## Project Status (As of February 17, 2026)
 
-## Repository Docs
+| Phase | Status |
+|---|---|
+| `PHASE-01-foundation.md` | Complete |
+| `PHASE-02-interfaces.md` | Complete |
+| `PHASE-03-healthcheck.md` | Complete |
+| `PHASE-04-dataflow.md` | Next |
+| `PHASE-05-generics.md` | Planned |
 
-Use the files in `docs/` as the source of truth for roadmap and implementation instructions:
-- `docs/ROADMAP.md` (overall learning plan and phase order)
-- `docs/PHASE-01-errors.md`
-- `docs/PHASE-02-interfaces.md`
-- `docs/PHASE-03-testing.md`
-- `docs/PHASE-04-fileio.md`
-- `docs/PHASE-05-generics.md`
+## Current Binaries
 
-## Project Structure
+| Binary | Purpose | Status |
+|---|---|---|
+| `hello-cli` | Concurrent greeting generator | Ready |
+| `hello-server` | HTTP API with middleware, metrics, graceful shutdown | Ready |
+| `healthcheck` | Concurrent HTTP/TCP/DNS endpoint checker | Ready |
+| `dataflow` | Stream processor for pipelines | Planned |
 
-```text
-.
-├── cmd/
-│   ├── hello-cli/main.go
-│   └── hello-server/main.go
-├── docs/
-│   ├── ROADMAP.md
-│   ├── PHASE-01-errors.md
-│   ├── PHASE-02-interfaces.md
-│   ├── PHASE-03-testing.md
-│   ├── PHASE-04-fileio.md
-│   └── PHASE-05-generics.md
-├── internal/
-│   ├── greeter/
-│   │   ├── greeter.go
-│   │   └── greeter_test.go
-│   ├── metrics/
-│   │   ├── counters.go
-│   │   └── counters_test.go
-│   └── validator/
-│       ├── validator.go
-│       └── validator_test.go
-├── .gitignore
-├── go.mod
-├── Makefile
-└── README.md
-```
+## Current Packages
 
-## CLI Use-Case (`hello-cli`)
+| Package | Purpose | Status |
+|---|---|---|
+| `internal/greeter` | Greeting strategies via interface | Ready |
+| `internal/metrics` | Thread-safe in-memory counters | Ready |
+| `internal/apperror` | Structured errors, wrapping, sentinels | Ready |
+| `internal/config` | JSON config + env var overrides | Ready |
+| `internal/middleware` | HTTP logging/recovery/method/counter middleware | Ready |
+| `internal/workerpool` | Generic concurrent fan-out/fan-in | Ready |
+| `internal/checker` | HTTP/TCP/DNS checks with TLS details | Ready |
+| `internal/pipeline` | Stream processing engine | Planned |
+| `internal/transform` | Text and JSON transforms | Planned |
+| `internal/collections` | Generic collection helpers | Planned |
+| `internal/cache` | Generic TTL cache | Planned |
 
-CLI programs are usually:
-- Started by a user
-- Do a task quickly
-- Exit
+## Canonical Roadmap
 
-Run it:
+Use top-level production docs as source of truth:
 
-```bash
-go run ./cmd/hello-cli --name Nick --repeat 3
-```
+- `ROADMAP.md`
+- `PHASE-01-foundation.md`
+- `PHASE-02-interfaces.md`
+- `PHASE-03-healthcheck.md`
+- `PHASE-04-dataflow.md`
+- `PHASE-05-generics.md`
 
-Flags:
-- `--name` (default `world`)
-- `--repeat` (default `1`)
-- `--json` (emit JSON lines)
+## Session History
 
-Concurrency in CLI:
-- A worker pool uses goroutines + channels to build greetings concurrently.
-- Output order is preserved by storing each result by index before printing.
+- `SESSION-LOG.md`
 
-Example text output:
-
-```text
-Hello, Nick! (#1)
-Hello, Nick! (#2)
-Hello, Nick! (#3)
-```
-
-Example JSON lines output:
+## Quick Start
 
 ```bash
-go run ./cmd/hello-cli --name Nick --repeat 3 --json
-```
-
-```json
-{"index":1,"message":"Hello, Nick! (#1)"}
-{"index":2,"message":"Hello, Nick! (#2)"}
-{"index":3,"message":"Hello, Nick! (#3)"}
-```
-
-## Server Use-Case (`hello-server`)
-
-Servers are usually:
-- Started once
-- Handle many requests over time
-- Keep running until stopped
-
-Run it:
-
-```bash
-go run ./cmd/hello-server
-```
-
-Endpoints:
-- `GET /hello?name=Nick` -> JSON response with message + request count
-- `GET /health` -> `200 OK` plain text
-- `GET /metrics` -> plain text counters
-
-Concurrency in server:
-- Each HTTP request is handled concurrently by Go's `net/http`.
-- A background goroutine logs an uptime tick every 5 seconds and increments a counter.
-
-Server timeout settings are configured (`ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, `IdleTimeout`) for safer defaults.
-
-Example:
-
-```bash
-curl "http://localhost:8080/hello?name=Nick"
-```
-
-```json
-{"message":"Hello, Nick! (#1)","count":1}
-```
-
-## Shared Packages
-
-- `internal/greeter`: builds greeting strings
-- `internal/metrics`: thread-safe in-memory counters used by both CLI and server
-- `internal/validator`: demonstrates Go error handling patterns with sentinel errors, wrapping, and `errors.Is` / `errors.As`
-
-## Makefile Commands
-
-```bash
-make fmt
 make test
+make vet
 make build
-make run-cli
-make run-server
 ```
 
-## Verify Locally
-
-Run exactly these commands:
+## CLI Examples
 
 ```bash
-go test ./...
-go run ./cmd/hello-cli --name Nick --repeat 3
-go run ./cmd/hello-server
+# Greeting CLI
+go run ./cmd/hello-cli --name Nick --repeat 3 --style formal
+
+# HTTP server
+go run ./cmd/hello-server --config config.example.json
+curl "http://localhost:8080/hello?name=Nick&style=shout"
+curl "http://localhost:8080/metrics"
+
+# Health checker
+go run ./cmd/healthcheck --targets targets.example.json --workers 4
+go run ./cmd/healthcheck --json
 ```
 
-## What This Demo Highlights
+## Legacy Learning Docs
 
-- Go supports both one-off CLI tools and long-running services with minimal setup.
-- `cmd/...` entrypoints keep different runtime styles clearly separated.
-- Shared internal packages encourage reuse without external dependencies.
-- Goroutines are lightweight and simple to start for concurrent work.
-- Channels provide a clear pattern for coordinating concurrent workers.
-- You can keep concurrency safe by controlling shared state through a mutex-backed package.
-- `net/http` in the standard library is enough to build production-style handlers and routing basics.
-- Timeouts on `http.Server` are straightforward and important for robust services.
-- `go test` and small unit tests make behavior easy to verify early.
+`docs/` is archived learning-track material.
+For active implementation work, use top-level roadmap/phase files.
