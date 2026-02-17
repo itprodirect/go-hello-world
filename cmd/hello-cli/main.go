@@ -5,10 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 
+	"github.com/itprodirect/go-hello-world/internal/apperror"
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
-	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type workerResult struct {
@@ -24,17 +25,19 @@ type jsonGreeting struct {
 func main() {
 	name := flag.String("name", "world", "name to greet")
 	repeat := flag.Int("repeat", 1, "number of greetings to generate")
+	style := flag.String("style", "standard", "greeting style: standard, formal, shout")
 	jsonOutput := flag.Bool("json", false, "emit JSON lines output")
 	flag.Parse()
 
-	if err := validator.ValidateName(*name); err != nil {
+	if err := validateName(*name); err != nil {
 		log.Fatalf("invalid input: %v", err)
 	}
-	if err := validator.ValidateRepeat(*repeat); err != nil {
+	if err := validateRepeat(*repeat); err != nil {
 		log.Fatalf("invalid input: %v", err)
 	}
 
 	counters := metrics.NewCounters()
+	g := greeter.New(*style)
 
 	jobs := make(chan int)
 	results := make(chan workerResult, *repeat)
@@ -48,7 +51,7 @@ func main() {
 		go func() {
 			for idx := range jobs {
 				sequence := idx + 1
-				message := greeter.BuildGreeting(*name, sequence)
+				message := g.Greet(*name, sequence)
 				counters.Inc("cli_greetings_generated")
 				results <- workerResult{index: idx, message: message}
 			}
@@ -84,4 +87,24 @@ func main() {
 
 		fmt.Println(message)
 	}
+}
+
+func validateName(name string) error {
+	clean := strings.TrimSpace(name)
+	if clean == "" {
+		return nil
+	}
+	for _, ch := range clean {
+		if ch == '<' || ch == '>' || ch == '&' {
+			return apperror.NewFieldError("name", "contains unsafe characters", apperror.ErrValidation)
+		}
+	}
+	return nil
+}
+
+func validateRepeat(repeat int) error {
+	if repeat < 1 || repeat > 1000 {
+		return apperror.NewFieldError("repeat", "must be 1-1000", apperror.ErrValidation)
+	}
+	return nil
 }

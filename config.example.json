@@ -1,0 +1,8 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "name": "go-hello-world",
+  "default_greet": "world",
+  "log_level": "info",
+  "json_output": false
+}

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -12,9 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/itprodirect/go-hello-world/internal/apperror"
+	"github.com/itprodirect/go-hello-world/internal/config"
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
-	"github.com/itprodirect/go-hello-world/internal/validator"
+	"github.com/itprodirect/go-hello-world/internal/middleware"
 )
 
 type helloResponse struct {
@@ -23,70 +25,69 @@ type helloResponse struct {
 }
 
 func main() {
+	cfgPath := flag.String("config", "", "path to config JSON file")
+	flag.Parse()
+
+	cfg := config.MustLoad(*cfgPath)
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	counters := metrics.NewCounters()
 	startedAt := time.Now()
+	logger.Printf("loaded config: %s (port %d)", cfg.Name, cfg.Port)
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		name := r.URL.Query().Get("name")
-		if strings.TrimSpace(name) != "" {
-			if err := validator.ValidateName(name); err != nil {
-				var ve *validator.ValidationError
-				if errors.As(err, &ve) {
-					http.Error(w, ve.Error(), http.StatusBadRequest)
-					return
-				}
-				http.Error(w, "invalid input", http.StatusBadRequest)
+	mux.Handle("/hello", middleware.AllowMethods([]string{http.MethodGet},
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			name := r.URL.Query().Get("name")
+			if strings.TrimSpace(name) == "" {
+				name = cfg.DefaultGreet
+			}
+			if err := validateHelloName(name); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-		}
 
-		count := counters.Inc("hello_requests")
-		message := greeter.BuildGreeting(name, int(count))
+			style := r.URL.Query().Get("style")
+			g := greeter.New(style)
+			count := counters.Inc("hello_requests")
+			message := g.Greet(name, int(count))
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		if err := json.NewEncoder(w).Encode(helloResponse{
-			Message: message,
-			Count:   count,
-		}); err != nil {
-			logger.Printf("encode /hello response: %v", err)
-		}
-	})
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			if err := json.NewEncoder(w).Encode(helloResponse{
+				Message: message,
+				Count:   count,
+			}); err != nil {
+				logger.Printf("encode /hello response: %v", err)
+			}
+		}),
+	))
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
+	mux.Handle("/health", middleware.AllowMethods([]string{http.MethodGet},
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			counters.Inc("health_requests")
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok\n"))
+		}),
+	))
 
-		counters.Inc("health_requests")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok\n"))
-	})
+	mux.Handle("/metrics", middleware.AllowMethods([]string{http.MethodGet},
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			counters.Inc("metrics_requests")
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			_, _ = w.Write([]byte(counters.PlainText()))
+		}),
+	))
 
-	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		counters.Inc("metrics_requests")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte(counters.PlainText()))
-	})
-
-	handler := instrumentRequests(counters, mux)
+	handler := middleware.Chain(
+		mux,
+		func(h http.Handler) http.Handler { return middleware.Logger(logger, h) },
+		func(h http.Handler) http.Handler { return middleware.Recover(logger, h) },
+		func(h http.Handler) http.Handler { return middleware.RequestCounter(counters, h) },
+	)
 
 	server := &http.Server{
-		Addr:              ":8080",
+		Addr:              cfg.Addr(),
 		Handler:           handler,
 		ReadHeaderTimeout: 2 * time.Second,
 		ReadTimeout:       5 * time.Second,
@@ -111,7 +112,7 @@ func main() {
 		}
 	}()
 
-	logger.Printf("hello-server listening on http://localhost%s", server.Addr)
+	logger.Printf("hello-server listening on http://%s", server.Addr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf("server error: %v", err)
 	}
@@ -135,16 +136,11 @@ func runUptimeTicker(ctx context.Context, logger *log.Logger, counters *metrics.
 	}
 }
 
-func instrumentRequests(counters *metrics.Counters, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counters.Inc("http_requests_total")
-
-		path := strings.Trim(r.URL.Path, "/")
-		if path == "" {
-			path = "root"
+func validateHelloName(name string) error {
+	for _, ch := range strings.TrimSpace(name) {
+		if ch == '<' || ch == '>' || ch == '&' {
+			return apperror.NewFieldError("name", "contains unsafe characters", apperror.ErrValidation)
 		}
-		counters.Inc("path_" + path + "_requests")
-
-		next.ServeHTTP(w, r)
-	})
+	}
+	return nil
 }

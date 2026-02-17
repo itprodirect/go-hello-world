@@ -1,4 +1,5 @@
 bin/
+coverage.out
 
 *.exe
 *.exe~
@@ -13,9 +14,7 @@ bin/
 # Windows Mark-of-the-Web artifacts
 *:Zone.Identifier
 
-# Windows Mark-of-the-Web artifacts
-*:Zone.Identifier
-
 # build outputs
 hello-cli
 hello-server
+healthcheck
