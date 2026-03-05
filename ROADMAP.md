@@ -9,8 +9,8 @@ This repository is a production toolkit factory, not a learning workbook.
 | `PHASE-01-foundation.md` | `apperror`, `config`, CLI/server integration | Complete |
 | `PHASE-02-interfaces.md` | `greeter` interface + `middleware` + CLI/server upgrades | Complete |
 | `PHASE-03-healthcheck.md` | `workerpool`, `checker`, `cmd/healthcheck` | Complete (Hardened) |
-| `PHASE-04-dataflow.md` | `pipeline`, `transform`, `cmd/dataflow` | Next |
-| `PHASE-05-generics.md` | `collections`, `cache` | Planned |
+| `PHASE-04-dataflow.md` | `pipeline`, `transform`, `cmd/dataflow` | Complete |
+| `PHASE-05-generics.md` | `collections`, `cache` | Next |
 
 ## Canonical Phase Docs
 
@@ -34,7 +34,7 @@ Binaries:
 - `cmd/hello-cli`
 - `cmd/hello-server`
 - `cmd/healthcheck`
-- `cmd/dataflow` (pending)
+- `cmd/dataflow`
 
 Packages:
 - `internal/apperror`
@@ -45,20 +45,23 @@ Packages:
 - `internal/workerpool`
 - `internal/checker`
 - `internal/validator`
-- `internal/pipeline` (pending)
-- `internal/transform` (pending)
-- `internal/collections` (pending)
-- `internal/cache` (pending)
+- `internal/pipeline`
+- `internal/transform`
+- `internal/collections` (next)
+- `internal/cache` (next)
 
-## Hardening Priorities
+## Completed Hardening Priorities
 
-1. Priority 1 complete: healthcheck JSON contract + failure exit semantics.
-2. Priority 2 complete: shared validator used by CLI and server paths.
-3. Priority 3 complete: command-level test coverage for shipped binaries.
-4. Priority 5 complete: Phase 3 docs converted to production runbook format.
-5. Priority 4 complete: CI quality gates added in `.github/workflows/ci.yml`.
-6. Priority 6 complete: checker performance/timeout hardening (shared client + context-bound TLS probe).
-7. Next: begin Phase 4 implementation (`internal/pipeline`, `internal/transform`, `cmd/dataflow`).
+1. Healthcheck JSON contract + failure exit semantics.
+2. Shared validator used by CLI and server paths.
+3. Command-level test coverage for shipped binaries.
+4. Phase docs cleanup to production-runbook format.
+5. CI quality gates in `.github/workflows/ci.yml`.
+6. Checker performance/timeout hardening (shared client + context-bound TLS probe).
+
+## Next Build Target
+
+Begin Phase 5 implementation (`internal/collections`, `internal/cache`).
 
 ## Quality Gate Policy
 

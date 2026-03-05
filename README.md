@@ -10,8 +10,8 @@ Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 | `PHASE-01-foundation.md` | Complete |
 | `PHASE-02-interfaces.md` | Complete |
 | `PHASE-03-healthcheck.md` | Complete (Hardened) |
-| `PHASE-04-dataflow.md` | Next |
-| `PHASE-05-generics.md` | Planned |
+| `PHASE-04-dataflow.md` | Complete |
+| `PHASE-05-generics.md` | Next |
 
 ## Current Binaries
 
@@ -20,7 +20,7 @@ Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 | `hello-cli` | Concurrent greeting generator | Ready |
 | `hello-server` | HTTP API with middleware, metrics, graceful shutdown | Ready |
 | `healthcheck` | Concurrent HTTP/TCP/DNS endpoint checker | Ready |
-| `dataflow` | Stream processor for pipelines | Planned |
+| `dataflow` | Stream processor for line-based transform pipelines | Ready |
 
 ## Current Packages
 
@@ -34,8 +34,8 @@ Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 | `internal/workerpool` | Generic concurrent fan-out/fan-in | Ready |
 | `internal/checker` | HTTP/TCP/DNS checks with pooled HTTP client + timeout-bound TLS probe | Ready |
 | `internal/validator` | Shared production input validation for CLI and server | Ready |
-| `internal/pipeline` | Stream processing engine | Planned |
-| `internal/transform` | Text and JSON transforms | Planned |
+| `internal/pipeline` | Sequential and concurrent line pipeline execution | Ready |
+| `internal/transform` | Reusable transform stages (text/filter/regex/json/replace) | Ready |
 | `internal/collections` | Generic collection helpers | Planned |
 | `internal/cache` | Generic TTL cache | Planned |
 
@@ -87,6 +87,9 @@ curl "http://localhost:8080/metrics"
 # Health checker
 go run ./cmd/healthcheck --targets targets.example.json --workers 4
 go run ./cmd/healthcheck --json
+
+# Dataflow pipeline
+echo " hello " | go run ./cmd/dataflow --mode chain
 ```
 
 ## Legacy Learning Docs
