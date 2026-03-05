@@ -12,6 +12,22 @@ import (
 	"time"
 )
 
+var sharedHTTPClient = &http.Client{
+	Transport: &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           (&net.Dialer{Timeout: 5 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+}
+
 // Target defines a single check configuration.
 type Target struct {
 	Name    string `json:"name"`
@@ -85,14 +101,7 @@ func checkHTTP(ctx context.Context, target Target) Result {
 		return result
 	}
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
-	resp, err := client.Do(req)
+	resp, err := sharedHTTPClient.Do(req)
 	result.Latency = time.Since(start)
 	if err != nil {
 		result.Status = "down"
@@ -144,22 +153,25 @@ func checkTCP(ctx context.Context, target Target) Result {
 	result.Detail = "connection successful"
 
 	if target.Port == 443 || target.Port == 8443 {
-		tlsConn, err := tls.DialWithDialer(
-			&net.Dialer{Timeout: 3 * time.Second},
-			"tcp",
-			addr,
-			&tls.Config{InsecureSkipVerify: true}, //nolint:gosec // probe tool intentionally accepts unknown certs
-		)
+		tlsConn, err := (&tls.Dialer{
+			NetDialer: &net.Dialer{},
+			Config: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec // probe tool intentionally accepts unknown certs
+			},
+		}).DialContext(ctx, "tcp", addr)
 		if err == nil {
 			defer tlsConn.Close()
-			state := tlsConn.ConnectionState()
-			if len(state.PeerCertificates) > 0 {
-				cert := state.PeerCertificates[0]
-				result.TLS = &TLSInfo{
-					Subject:  cert.Subject.CommonName,
-					Issuer:   cert.Issuer.CommonName,
-					NotAfter: cert.NotAfter,
-					DaysLeft: int(time.Until(cert.NotAfter).Hours() / 24),
+			tlsClient, ok := tlsConn.(*tls.Conn)
+			if ok {
+				state := tlsClient.ConnectionState()
+				if len(state.PeerCertificates) > 0 {
+					cert := state.PeerCertificates[0]
+					result.TLS = &TLSInfo{
+						Subject:  cert.Subject.CommonName,
+						Issuer:   cert.Issuer.CommonName,
+						NotAfter: cert.NotAfter,
+						DaysLeft: int(time.Until(cert.NotAfter).Hours() / 24),
+					}
 				}
 			}
 		}
@@ -227,6 +239,7 @@ func (r Result) MarshalJSON() ([]byte, error) {
 		TLS:       r.TLS,
 	})
 }
+
 func StatusEmoji(status string) string {
 	switch status {
 	case "up":

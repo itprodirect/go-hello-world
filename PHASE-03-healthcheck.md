@@ -77,13 +77,19 @@ go test -cover ./...
 Current package coverage snapshots:
 
 - `cmd/healthcheck`: 77.8%
-- `internal/checker`: 73.2%
+- `internal/checker`: 74.7%
 - `internal/workerpool`: 93.3%
 
-## Next Hardening Targets
+## Hardening Status
 
-These are tracked after Phase 3 completion:
+Completed in this phase:
 
-1. Reuse shared HTTP transport/client in checker for connection pooling.
-2. Make TCP TLS probe fully context-bound to phase timeout budget.
-3. Keep CLI and JSON contracts stable with command-level tests.
+1. Stable JSON contract for `latency_ms` (integer milliseconds).
+2. Deterministic failure exit behavior for `cmd/healthcheck`.
+3. Command-level tests for healthcheck paths.
+4. Shared HTTP transport/client reuse in checker for connection pooling.
+5. Context-bound TCP TLS probe behavior within timeout budget.
+
+Next:
+
+1. Start Phase 4 (`internal/pipeline`, `internal/transform`, `cmd/dataflow`).

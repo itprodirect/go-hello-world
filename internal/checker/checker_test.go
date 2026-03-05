@@ -50,6 +50,32 @@ func TestCheckHTTPDownServer(t *testing.T) {
 	}
 }
 
+func TestCheckHTTPRedirectReturnsImmediateResponse(t *testing.T) {
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("target"))
+	}))
+	defer targetServer.Close()
+
+	redirectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, targetServer.URL, http.StatusFound)
+	}))
+	defer redirectServer.Close()
+
+	result := Check(context.Background(), Target{
+		Name: "redirect",
+		URL:  redirectServer.URL,
+		Type: "http",
+	})
+
+	if result.Status != "up" {
+		t.Fatalf("status=%q, want up", result.Status)
+	}
+	if result.Detail != "HTTP 302" {
+		t.Fatalf("detail=%q, want HTTP 302", result.Detail)
+	}
+}
+
 func TestCheckHTTPUnreachable(t *testing.T) {
 	result := Check(context.Background(), Target{
 		Name:    "unreachable",
@@ -86,6 +112,55 @@ func TestCheckTCPOpenPort(t *testing.T) {
 
 	if result.Status != "up" {
 		t.Errorf("Status = %q, want up (detail=%s)", result.Status, result.Detail)
+	}
+}
+
+func TestCheckTCPTLSProbeRespectsTimeout(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:8443")
+	if err != nil {
+		t.Skipf("port 8443 unavailable: %v", err)
+	}
+	defer listener.Close()
+
+	done := make(chan struct{})
+	defer close(done)
+
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				select {
+				case <-done:
+					return
+				case <-time.After(2 * time.Second):
+					return
+				}
+			}(conn)
+		}
+	}()
+
+	start := time.Now()
+	result := Check(context.Background(), Target{
+		Name:    "tls-timeout",
+		Host:    "127.0.0.1",
+		Port:    8443,
+		Type:    "tcp",
+		Timeout: 200,
+	})
+	elapsed := time.Since(start)
+
+	if result.Status != "up" {
+		t.Fatalf("status=%q, want up", result.Status)
+	}
+	if result.TLS != nil {
+		t.Fatalf("expected no TLS cert data from stalled handshake, got: %#v", result.TLS)
+	}
+	if elapsed > time.Second {
+		t.Fatalf("elapsed=%s, expected timeout-bound return near 200ms", elapsed)
 	}
 }
 

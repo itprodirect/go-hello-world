@@ -32,7 +32,7 @@ Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 | `internal/config` | JSON config + env var overrides | Ready |
 | `internal/middleware` | HTTP logging/recovery/method/counter middleware | Ready |
 | `internal/workerpool` | Generic concurrent fan-out/fan-in | Ready |
-| `internal/checker` | HTTP/TCP/DNS checks with TLS details | Ready |
+| `internal/checker` | HTTP/TCP/DNS checks with pooled HTTP client + timeout-bound TLS probe | Ready |
 | `internal/validator` | Shared production input validation for CLI and server | Ready |
 | `internal/pipeline` | Stream processing engine | Planned |
 | `internal/transform` | Text and JSON transforms | Planned |

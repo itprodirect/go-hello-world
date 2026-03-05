@@ -57,7 +57,8 @@ Packages:
 3. Priority 3 complete: command-level test coverage for shipped binaries.
 4. Priority 5 complete: Phase 3 docs converted to production runbook format.
 5. Priority 4 complete: CI quality gates added in `.github/workflows/ci.yml`.
-6. Priority 6 next: checker performance/timeout hardening (shared client, context-bound TLS probe).
+6. Priority 6 complete: checker performance/timeout hardening (shared client + context-bound TLS probe).
+7. Next: begin Phase 4 implementation (`internal/pipeline`, `internal/transform`, `cmd/dataflow`).
 
 ## Quality Gate Policy
 

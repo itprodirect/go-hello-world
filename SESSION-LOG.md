@@ -7,6 +7,7 @@
 - Consolidated validation logic into one shared production package.
 - Removed stale Phase 3 documentation snippets and replaced with a production runbook.
 - Added GitHub Actions CI quality gates for formatting, vetting, testing, and coverage threshold enforcement.
+- Completed checker performance hardening with pooled HTTP client reuse and timeout-bound TLS probing.
 
 ### Implemented in this Session
 - Priority 1 + 3 hardening:
@@ -31,6 +32,12 @@
 - Priority 4 CI gates:
   - Added `.github/workflows/ci.yml`.
   - CI now enforces `gofmt`, `go vet ./...`, `go test` with coverage profile, and total coverage >= 70%.
+- Priority 6 performance/timeout hardening:
+  - Replaced per-request HTTP client creation with a shared pooled client/transport in `internal/checker`.
+  - Switched TCP TLS probing to `tls.Dialer.DialContext` so TLS probe work respects target timeout context.
+  - Added regression tests:
+    - redirect behavior still uses immediate response (`HTTP 302`)
+    - TLS probe timeout remains context-bound under stalled handshake conditions
 
 ### Documentation Updates
 - Updated `README.md` project status and quality-gate policy.
@@ -46,13 +53,11 @@ Coverage snapshots:
 - `cmd/healthcheck`: 77.8%
 - `cmd/hello-cli`: 91.5%
 - `cmd/hello-server`: 39.0%
+- `internal/checker`: 74.7%
 - `internal/validator`: 93.3%
 
 ### Next Session Starting Point
-- Priority 6 performance hardening in `internal/checker`:
-  - shared HTTP transport/client reuse
-  - context-bound TLS probe path
-- Then Phase 4 implementation (`internal/pipeline`, `internal/transform`, `cmd/dataflow`).
+- Begin Phase 4 implementation (`internal/pipeline`, `internal/transform`, `cmd/dataflow`).
 
 ## 2026-02-17
 
