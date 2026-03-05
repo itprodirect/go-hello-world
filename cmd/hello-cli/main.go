@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
-	"strings"
+	"io"
+	"os"
 
-	"github.com/itprodirect/go-hello-world/internal/apperror"
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
+	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type workerResult struct {
@@ -23,17 +23,29 @@ type jsonGreeting struct {
 }
 
 func main() {
-	name := flag.String("name", "world", "name to greet")
-	repeat := flag.Int("repeat", 1, "number of greetings to generate")
-	style := flag.String("style", "standard", "greeting style: standard, formal, shout")
-	jsonOutput := flag.Bool("json", false, "emit JSON lines output")
-	flag.Parse()
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
 
-	if err := validateName(*name); err != nil {
-		log.Fatalf("invalid input: %v", err)
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("hello-cli", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+
+	name := fs.String("name", "world", "name to greet")
+	repeat := fs.Int("repeat", 1, "number of greetings to generate")
+	style := fs.String("style", "standard", "greeting style: standard, formal, shout")
+	jsonOutput := fs.Bool("json", false, "emit JSON lines output")
+
+	if err := fs.Parse(args); err != nil {
+		return 2
 	}
-	if err := validateRepeat(*repeat); err != nil {
-		log.Fatalf("invalid input: %v", err)
+
+	if err := validator.ValidateName(*name); err != nil {
+		fmt.Fprintf(stderr, "invalid input: %v\n", err)
+		return 1
+	}
+	if err := validator.ValidateRepeat(*repeat); err != nil {
+		fmt.Fprintf(stderr, "invalid input: %v\n", err)
+		return 1
 	}
 
 	counters := metrics.NewCounters()
@@ -71,40 +83,17 @@ func main() {
 
 	for i, message := range orderedMessages {
 		if *jsonOutput {
-			payload := jsonGreeting{
-				Index:   i + 1,
-				Message: message,
-			}
-
+			payload := jsonGreeting{Index: i + 1, Message: message}
 			line, err := json.Marshal(payload)
 			if err != nil {
-				log.Fatalf("marshal output: %v", err)
+				fmt.Fprintf(stderr, "marshal output: %v\n", err)
+				return 1
 			}
-
-			fmt.Println(string(line))
+			fmt.Fprintln(stdout, string(line))
 			continue
 		}
+		fmt.Fprintln(stdout, message)
+	}
 
-		fmt.Println(message)
-	}
-}
-
-func validateName(name string) error {
-	clean := strings.TrimSpace(name)
-	if clean == "" {
-		return nil
-	}
-	for _, ch := range clean {
-		if ch == '<' || ch == '>' || ch == '&' {
-			return apperror.NewFieldError("name", "contains unsafe characters", apperror.ErrValidation)
-		}
-	}
-	return nil
-}
-
-func validateRepeat(repeat int) error {
-	if repeat < 1 || repeat > 1000 {
-		return apperror.NewFieldError("repeat", "must be 1-1000", apperror.ErrValidation)
-	}
-	return nil
+	return 0
 }
