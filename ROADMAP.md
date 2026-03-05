@@ -2,13 +2,13 @@
 
 This repository is a production toolkit factory, not a learning workbook.
 
-## Phase Status (As of February 17, 2026)
+## Phase Status (As of March 5, 2026)
 
 | Phase | Scope | Status |
 |---|---|---|
 | `PHASE-01-foundation.md` | `apperror`, `config`, CLI/server integration | Complete |
 | `PHASE-02-interfaces.md` | `greeter` interface + `middleware` + CLI/server upgrades | Complete |
-| `PHASE-03-healthcheck.md` | `workerpool`, `checker`, `cmd/healthcheck` | Complete |
+| `PHASE-03-healthcheck.md` | `workerpool`, `checker`, `cmd/healthcheck` | Complete (Hardened) |
 | `PHASE-04-dataflow.md` | `pipeline`, `transform`, `cmd/dataflow` | Next |
 | `PHASE-05-generics.md` | `collections`, `cache` | Planned |
 
@@ -26,6 +26,7 @@ This repository is a production toolkit factory, not a learning workbook.
 - Keep the repo buildable after each phase.
 - Run package-level tests as each package lands, then run full-repo checks.
 - Preserve existing behavior unless a phase explicitly changes it.
+- Prefer contract-focused docs over copied code blocks to avoid drift.
 
 ## Current Production Targets
 
@@ -43,10 +44,19 @@ Packages:
 - `internal/metrics`
 - `internal/workerpool`
 - `internal/checker`
+- `internal/validator`
 - `internal/pipeline` (pending)
 - `internal/transform` (pending)
 - `internal/collections` (pending)
 - `internal/cache` (pending)
+
+## Current Hardening Focus
+
+1. Priority 1 complete: healthcheck JSON contract + failure exit semantics.
+2. Priority 2 complete: shared validator used by CLI and server paths.
+3. Priority 3 complete: command-level test coverage for shipped binaries.
+4. Priority 5 in progress: phase docs cleanup for production trust.
+5. Priority 4 next: CI quality gates (`fmt`, `vet`, `test`, coverage threshold).
 
 ## Session Notes
 
