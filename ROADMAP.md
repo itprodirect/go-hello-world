@@ -1,4 +1,4 @@
-﻿# Go Toolkit Roadmap
+# Go Toolkit Roadmap
 
 This repository is a production toolkit factory, not a learning workbook.
 
@@ -50,13 +50,27 @@ Packages:
 - `internal/collections` (pending)
 - `internal/cache` (pending)
 
-## Current Hardening Focus
+## Hardening Priorities
 
 1. Priority 1 complete: healthcheck JSON contract + failure exit semantics.
 2. Priority 2 complete: shared validator used by CLI and server paths.
 3. Priority 3 complete: command-level test coverage for shipped binaries.
-4. Priority 5 in progress: phase docs cleanup for production trust.
-5. Priority 4 next: CI quality gates (`fmt`, `vet`, `test`, coverage threshold).
+4. Priority 5 complete: Phase 3 docs converted to production runbook format.
+5. Priority 4 complete: CI quality gates added in `.github/workflows/ci.yml`.
+6. Priority 6 next: checker performance/timeout hardening (shared client, context-bound TLS probe).
+
+## Quality Gate Policy
+
+Every push/PR should pass:
+
+- `gofmt` check
+- `go vet ./...`
+- `go test ./...`
+- Coverage threshold (>= 70%)
+
+CI workflow file:
+
+- `.github/workflows/ci.yml`
 
 ## Session Notes
 

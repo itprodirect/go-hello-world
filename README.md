@@ -1,15 +1,15 @@
-﻿# Go Toolkit: Reusable Blocks to Real Tools
+# Go Toolkit: Reusable Blocks to Real Tools
 
 Production-focused Go toolkit factory.
 Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 
-## Project Status (As of February 17, 2026)
+## Project Status (As of March 5, 2026)
 
 | Phase | Status |
 |---|---|
 | `PHASE-01-foundation.md` | Complete |
 | `PHASE-02-interfaces.md` | Complete |
-| `PHASE-03-healthcheck.md` | Complete |
+| `PHASE-03-healthcheck.md` | Complete (Hardened) |
 | `PHASE-04-dataflow.md` | Next |
 | `PHASE-05-generics.md` | Planned |
 
@@ -33,6 +33,7 @@ Each phase adds reusable `internal/` packages and working `cmd/` binaries.
 | `internal/middleware` | HTTP logging/recovery/method/counter middleware | Ready |
 | `internal/workerpool` | Generic concurrent fan-out/fan-in | Ready |
 | `internal/checker` | HTTP/TCP/DNS checks with TLS details | Ready |
+| `internal/validator` | Shared production input validation for CLI and server | Ready |
 | `internal/pipeline` | Stream processing engine | Planned |
 | `internal/transform` | Text and JSON transforms | Planned |
 | `internal/collections` | Generic collection helpers | Planned |
@@ -52,6 +53,17 @@ Use top-level production docs as source of truth:
 ## Session History
 
 - `SESSION-LOG.md`
+
+## Quality Gates
+
+GitHub Actions workflow: `.github/workflows/ci.yml`
+
+On every push/PR, CI runs:
+
+1. `gofmt` format check (no diff allowed)
+2. `go vet ./...`
+3. `go test -covermode=atomic -coverprofile=coverage.out ./...`
+4. Total coverage threshold enforcement (>= 70%)
 
 ## Quick Start
 

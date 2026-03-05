@@ -1,4 +1,4 @@
-﻿# Phase 3: Healthcheck Toolkit (Production)
+# Phase 3: Healthcheck Toolkit (Production)
 
 > Produces: `internal/checker`, `internal/workerpool`, `cmd/healthcheck`
 > Ships: A concurrent HTTP/TCP/DNS health checker suitable for CI and ops checks
