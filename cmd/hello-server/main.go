@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/itprodirect/go-hello-world/internal/apperror"
 	"github.com/itprodirect/go-hello-world/internal/config"
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
 	"github.com/itprodirect/go-hello-world/internal/middleware"
+	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type helloResponse struct {
@@ -79,7 +79,7 @@ func newHandler(cfg config.AppConfig, logger *log.Logger, counters *metrics.Coun
 			if strings.TrimSpace(name) == "" {
 				name = cfg.DefaultGreet
 			}
-			if err := validateHelloName(name); err != nil {
+			if err := validator.ValidateName(name); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -138,13 +138,4 @@ func runUptimeTicker(ctx context.Context, logger *log.Logger, counters *metrics.
 			logger.Printf("uptime tick #%d (%s)", tick, uptime)
 		}
 	}
-}
-
-func validateHelloName(name string) error {
-	for _, ch := range strings.TrimSpace(name) {
-		if ch == '<' || ch == '>' || ch == '&' {
-			return apperror.NewFieldError("name", "contains unsafe characters", apperror.ErrValidation)
-		}
-	}
-	return nil
 }

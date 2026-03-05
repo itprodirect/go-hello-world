@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
-	"github.com/itprodirect/go-hello-world/internal/apperror"
 	"github.com/itprodirect/go-hello-world/internal/greeter"
 	"github.com/itprodirect/go-hello-world/internal/metrics"
+	"github.com/itprodirect/go-hello-world/internal/validator"
 )
 
 type workerResult struct {
@@ -40,11 +39,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	if err := validateName(*name); err != nil {
+	if err := validator.ValidateName(*name); err != nil {
 		fmt.Fprintf(stderr, "invalid input: %v\n", err)
 		return 1
 	}
-	if err := validateRepeat(*repeat); err != nil {
+	if err := validator.ValidateRepeat(*repeat); err != nil {
 		fmt.Fprintf(stderr, "invalid input: %v\n", err)
 		return 1
 	}
@@ -97,24 +96,4 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	return 0
-}
-
-func validateName(name string) error {
-	clean := strings.TrimSpace(name)
-	if clean == "" {
-		return nil
-	}
-	for _, ch := range clean {
-		if ch == '<' || ch == '>' || ch == '&' {
-			return apperror.NewFieldError("name", "contains unsafe characters", apperror.ErrValidation)
-		}
-	}
-	return nil
-}
-
-func validateRepeat(repeat int) error {
-	if repeat < 1 || repeat > 1000 {
-		return apperror.NewFieldError("repeat", "must be 1-1000", apperror.ErrValidation)
-	}
-	return nil
 }

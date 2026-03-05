@@ -33,6 +33,45 @@ func TestRunInvalidRepeatReturnsOne(t *testing.T) {
 	}
 }
 
+func TestRunRepeatAboveMaxReturnsOne(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{"--repeat", "1001"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d, want 1", code)
+	}
+	if !strings.Contains(stderr.String(), "repeat") {
+		t.Fatalf("unexpected stderr: %q", stderr.String())
+	}
+}
+
+func TestRunUnsafeNameReturnsOne(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{"--name", "Nick<script>"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d, want 1", code)
+	}
+	if !strings.Contains(stderr.String(), "invalid input") {
+		t.Fatalf("unexpected stderr: %q", stderr.String())
+	}
+}
+
+func TestRunEmptyNameFallsBackToWorld(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{"--name", "", "--repeat", "1"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d, want 0; stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "world") {
+		t.Fatalf("stdout=%q, want fallback world greeting", stdout.String())
+	}
+}
+
 func TestRunJSONFormalStyleOutput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
