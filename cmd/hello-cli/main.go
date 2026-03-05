@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/itprodirect/go-hello-world/internal/apperror"
@@ -23,17 +24,29 @@ type jsonGreeting struct {
 }
 
 func main() {
-	name := flag.String("name", "world", "name to greet")
-	repeat := flag.Int("repeat", 1, "number of greetings to generate")
-	style := flag.String("style", "standard", "greeting style: standard, formal, shout")
-	jsonOutput := flag.Bool("json", false, "emit JSON lines output")
-	flag.Parse()
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("hello-cli", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+
+	name := fs.String("name", "world", "name to greet")
+	repeat := fs.Int("repeat", 1, "number of greetings to generate")
+	style := fs.String("style", "standard", "greeting style: standard, formal, shout")
+	jsonOutput := fs.Bool("json", false, "emit JSON lines output")
+
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
 
 	if err := validateName(*name); err != nil {
-		log.Fatalf("invalid input: %v", err)
+		fmt.Fprintf(stderr, "invalid input: %v\n", err)
+		return 1
 	}
 	if err := validateRepeat(*repeat); err != nil {
-		log.Fatalf("invalid input: %v", err)
+		fmt.Fprintf(stderr, "invalid input: %v\n", err)
+		return 1
 	}
 
 	counters := metrics.NewCounters()
@@ -71,22 +84,19 @@ func main() {
 
 	for i, message := range orderedMessages {
 		if *jsonOutput {
-			payload := jsonGreeting{
-				Index:   i + 1,
-				Message: message,
-			}
-
+			payload := jsonGreeting{Index: i + 1, Message: message}
 			line, err := json.Marshal(payload)
 			if err != nil {
-				log.Fatalf("marshal output: %v", err)
+				fmt.Fprintf(stderr, "marshal output: %v\n", err)
+				return 1
 			}
-
-			fmt.Println(string(line))
+			fmt.Fprintln(stdout, string(line))
 			continue
 		}
-
-		fmt.Println(message)
+		fmt.Fprintln(stdout, message)
 	}
+
+	return 0
 }
 
 func validateName(name string) error {

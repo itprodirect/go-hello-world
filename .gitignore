@@ -1,4 +1,4 @@
-bin/
+﻿bin/
 coverage.out
 
 *.exe
@@ -15,6 +15,7 @@ coverage.out
 *:Zone.Identifier
 
 # build outputs
-hello-cli
-hello-server
-healthcheck
+/hello-cli
+/hello-server
+/healthcheck
+

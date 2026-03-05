@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -175,5 +176,34 @@ func TestStatusEmoji(t *testing.T) {
 		if got := StatusEmoji(tt.status); got != tt.want {
 			t.Errorf("StatusEmoji(%q) = %q, want %q", tt.status, got, tt.want)
 		}
+	}
+}
+
+func TestResultMarshalJSONLatencyMilliseconds(t *testing.T) {
+	result := Result{
+		Name:    "svc",
+		Type:    "http",
+		Target:  "https://example.com",
+		Status:  "up",
+		Latency: 1500 * time.Millisecond,
+		Detail:  "ok",
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal result: %v", err)
+	}
+
+	var got map[string]interface{}
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+
+	latency, ok := got["latency_ms"].(float64)
+	if !ok {
+		t.Fatalf("latency_ms not numeric: %#v", got["latency_ms"])
+	}
+	if latency != 1500 {
+		t.Fatalf("latency_ms=%.0f, want 1500", latency)
 	}
 }

@@ -28,7 +28,7 @@ type Result struct {
 	Type    string        `json:"type"`
 	Target  string        `json:"target"`
 	Status  string        `json:"status"` // up, down, error
-	Latency time.Duration `json:"latency_ms"`
+	Latency time.Duration `json:"-"`
 	Detail  string        `json:"detail,omitempty"`
 	TLS     *TLSInfo      `json:"tls,omitempty"`
 }
@@ -205,6 +205,28 @@ func LoadTargets(path string) ([]Target, error) {
 	return targets, nil
 }
 
+// MarshalJSON renders Latency as integer milliseconds under latency_ms.
+func (r Result) MarshalJSON() ([]byte, error) {
+	type resultJSON struct {
+		Name      string   `json:"name"`
+		Type      string   `json:"type"`
+		Target    string   `json:"target"`
+		Status    string   `json:"status"`
+		LatencyMS int64    `json:"latency_ms"`
+		Detail    string   `json:"detail,omitempty"`
+		TLS       *TLSInfo `json:"tls,omitempty"`
+	}
+
+	return json.Marshal(resultJSON{
+		Name:      r.Name,
+		Type:      r.Type,
+		Target:    r.Target,
+		Status:    r.Status,
+		LatencyMS: r.Latency.Milliseconds(),
+		Detail:    r.Detail,
+		TLS:       r.TLS,
+	})
+}
 func StatusEmoji(status string) string {
 	switch status {
 	case "up":

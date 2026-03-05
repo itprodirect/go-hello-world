@@ -34,6 +34,43 @@ func main() {
 	startedAt := time.Now()
 	logger.Printf("loaded config: %s (port %d)", cfg.Name, cfg.Port)
 
+	handler := newHandler(cfg, logger, counters)
+
+	server := &http.Server{
+		Addr:              cfg.Addr(),
+		Handler:           handler,
+		ReadHeaderTimeout: 2 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	go runUptimeTicker(ctx, logger, counters, startedAt)
+
+	go func() {
+		<-ctx.Done()
+		logger.Println("shutdown signal received")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.Printf("server shutdown error: %v", err)
+		}
+	}()
+
+	logger.Printf("hello-server listening on http://%s", server.Addr)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Fatalf("server error: %v", err)
+	}
+
+	logger.Println("server stopped")
+}
+
+func newHandler(cfg config.AppConfig, logger *log.Logger, counters *metrics.Counters) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("/hello", middleware.AllowMethods([]string{http.MethodGet},
@@ -79,45 +116,12 @@ func main() {
 		}),
 	))
 
-	handler := middleware.Chain(
+	return middleware.Chain(
 		mux,
 		func(h http.Handler) http.Handler { return middleware.Logger(logger, h) },
 		func(h http.Handler) http.Handler { return middleware.Recover(logger, h) },
 		func(h http.Handler) http.Handler { return middleware.RequestCounter(counters, h) },
 	)
-
-	server := &http.Server{
-		Addr:              cfg.Addr(),
-		Handler:           handler,
-		ReadHeaderTimeout: 2 * time.Second,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       30 * time.Second,
-	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	go runUptimeTicker(ctx, logger, counters, startedAt)
-
-	go func() {
-		<-ctx.Done()
-		logger.Println("shutdown signal received")
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			logger.Printf("server shutdown error: %v", err)
-		}
-	}()
-
-	logger.Printf("hello-server listening on http://%s", server.Addr)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf("server error: %v", err)
-	}
-
-	logger.Println("server stopped")
 }
 
 func runUptimeTicker(ctx context.Context, logger *log.Logger, counters *metrics.Counters, startedAt time.Time) {
