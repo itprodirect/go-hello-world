@@ -1,4 +1,4 @@
-﻿bin/
+bin/
 coverage.out
 
 *.exe
@@ -18,4 +18,4 @@ coverage.out
 /hello-cli
 /hello-server
 /healthcheck
-
+/dataflow

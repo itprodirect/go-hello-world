@@ -1,4 +1,4 @@
-.PHONY: fmt vet test test-cover bench build clean run-cli run-server run-healthcheck
+.PHONY: fmt vet test test-cover bench build clean run-cli run-server run-healthcheck run-dataflow
 
 fmt:
 	gofmt -w $(shell find . -name '*.go' -not -path './.git/*')
@@ -23,6 +23,7 @@ build:
 	go build -o bin/hello-cli ./cmd/hello-cli
 	go build -o bin/hello-server ./cmd/hello-server
 	go build -o bin/healthcheck ./cmd/healthcheck
+	go build -o bin/dataflow ./cmd/dataflow
 
 clean:
 	rm -rf bin coverage.out
@@ -35,3 +36,6 @@ run-server:
 
 run-healthcheck:
 	go run ./cmd/healthcheck --targets targets.example.json --workers 4
+
+run-dataflow:
+	go run ./cmd/dataflow --mode upper
